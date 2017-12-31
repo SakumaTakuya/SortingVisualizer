@@ -1,8 +1,8 @@
 ﻿Shader "Custom/LevelShader" {
 
     Properties {
-        _Color ("Color", Color) = (1,1,1,1)
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
+        [MaterialToggle] _Shadow("Cast Shadow", int) = 0
     }
     SubShader {
         Pass {
@@ -34,8 +34,8 @@
             };
             
             sampler2D _MainTex;
-            float3 _Scale;
-            fixed4 _Color;
+            float _Length;
+            int _Shadow;
 
         #if SHADER_TARGET >= 45
             StructuredBuffer<Level> _LevelBuffer;
@@ -49,7 +49,7 @@
                 SHADOW_COORDS(2)
                 fixed3 diff : COLOR0;
                 fixed3 ambient : COLOR1;
-                
+                fixed3 color : COLOR2;
             };
             
             //アフィン変換の行列を作成する
@@ -73,32 +73,40 @@
                 float3 pos = b.position;
                 int num = b.number;
             #else
-                float3 vel = 0;
+                float3 pos = 0;
                 int num = 0;
             #endif
                 
                 float4x4 object2world = transform(
-                    float3(1, num + 0.1f, 1),
-                    pos
+                    float3(1, num + 0.1f, 1) / _Length * 2,
+                    pos / _Length * 2
                 );
                 
                 v2f o;
                 o.pos = UnityObjectToClipPos(mul(object2world, v.vertex));
                 o.normal = normalize(mul(object2world, v.normal));
                 o.uv = v.texcoord;
-                half nl = max(0, dot(o.normal, _WorldSpaceLightPos0.xyz));
-                o.diff = nl * _LightColor0.rgb;
-                o.ambient = ShadeSH9(half4(o.normal.xyz, 1));
-                TRANSFER_SHADOW(o)
+                o.color = fixed3(1, (float) num / _Length, (float) num / _Length * 0.5);
+                
+                if(_Shadow > 0)
+                {
+                    half nl = max(0, dot(o.normal, _WorldSpaceLightPos0.xyz));
+                    o.diff = nl * _LightColor0.rgb;
+                    o.ambient = ShadeSH9(half4(o.normal.xyz, 1));
+                }
+                
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
-            {
-                fixed shadow = SHADOW_ATTENUATION(i);
-                fixed4 col = tex2D(_MainTex, i.uv) * _Color;
-                fixed3 lighting = i.diff * shadow + i.ambient;
-                col.rgb *= lighting;
+            {   
+                fixed4 col = tex2D(_MainTex, i.uv) * fixed4(i.color,0);
+                if(_Shadow > 0)
+                {
+                    fixed shadow = SHADOW_ATTENUATION(i);
+                    fixed3 lighting = i.diff * shadow + i.ambient;
+                    col.rgb *= lighting;
+                }
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }

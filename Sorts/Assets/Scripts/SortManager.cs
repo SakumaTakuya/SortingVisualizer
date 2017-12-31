@@ -10,40 +10,63 @@ public class SortManager : MonoBehaviour
 
 	private List<IComparable> _targets;
 	private ISorter _sorter = new QuickSorter();
-	private readonly List<SortStep> _steps = new List<SortStep>();
-
+	
 	public ISorter Sorter
 	{
 		get { return _sorter; }
 		set { _sorter = value; }
 	}
 
-/*	public List<SortStep> Steps
+	public int Length
 	{
-		get { return _steps; }
-	}*/
-
-	private void Start () 
-	{			
+		get { return _length; }
+		set { _length = value; }
+	}
+	
+	public void SetAscendingArray()
+	{
+		_targets = new List<IComparable>();
+		for (var i = 0; i < _length; i++)
+		{
+			_targets.Add(i);
+		}
+		_sorter.Order = Order.Descending;
+	}
+	
+	public void SetDescendingArray()
+	{
+		_targets = new List<IComparable>();
+		for (var i = _length; i > 0; i--)
+		{
+			_targets.Add(i);
+		}
+		_sorter.Order = Order.Ascending;
+	}
+	
+	public void SetRandomArray()
+	{
 		_targets = new List<IComparable>();
 		for (var i = 0; i < _length; i++)
 		{
 			_targets.Add(Random.Range(0, _length));
 		}
-		
-		Sorter = new QuickSorter();
-		Sorter.SortWithEvent(_targets, 0, _length - 1, (a, l, r) =>
+		_sorter.Order = Order.Descending;
+	}
+
+	public void Execute()
+	{
+		var step = 0;
+		Sorter.SortWithEvent(_targets, 0, _length - 1, (arr, l, r) =>
 			{
-				var list = new List<IComparable>(a);
-				_steps.Add(new SortStep(list,l,r));
+				step++;
+				var index = 0;
+				foreach (var c in arr)
+				{
+					_visualizer.SetElement((int)c,index++,step);
+				}
 			}
 		);
 		
-		_visualizer.ShowStep(_steps);
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
+		_visualizer.ShowStep(_length);
 	}
 }

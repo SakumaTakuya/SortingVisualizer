@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public struct SortStep
 {
@@ -12,5 +13,17 @@ public struct SortStep
         Process = process;
         Left = left;
         Right = right;
+    }
+}
+
+public struct SortElement
+{
+    public Vector3 Position;
+    public int Number;
+
+    public SortElement(Vector3 position, int number)
+    {
+        Position = position;
+        Number = number;
     }
 }
