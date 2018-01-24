@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CameraController : MonoBehaviour 
-{
+public class CameraController : MonoBehaviour
+{	
 	[SerializeField] private float _lookSensitivity = 10;
 	[SerializeField] private Vector2 _roteSensitivity = new Vector2(15, 15);
 
@@ -24,14 +24,7 @@ public class CameraController : MonoBehaviour
 			0,
 			0,
 			Input.GetAxis("Mouse ScrollWheel") * _lookSensitivity * Camera.main.transform.position.magnitude * 0.02f
-		);
-		
-		transform.Translate(
-			0,
-			0,
-			Input.GetAxis("Horizontal"),
-			Space.World
-		);
+		);		
 		
 		if(!Input.GetMouseButton(0)) return;
 		_roteX += Input.GetAxis("Mouse X") * _roteSensitivity.x;

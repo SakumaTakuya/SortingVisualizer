@@ -15,6 +15,7 @@ public class BubbleSorter : ISorter {
 	public void SortWithEvent(List<IComparable> array, int left, int right, Action<List<IComparable>, int, int> action)
 	{
 		BubbleSortWirhEvent(array,action);
+		action(array, -1, -1);
 	}
 	
 	private void BubbleSortWirhEvent(List<IComparable> array, Action<List<IComparable>, int, int> action)
@@ -34,8 +35,8 @@ public class BubbleSorter : ISorter {
 					default:
 						throw new ArgumentOutOfRangeException();
 				}
-				Swap(array, j - 1, j);
 				action(array, i - 1, i);
+				Swap(array, j - 1, j);			
 			}
 			
 		}

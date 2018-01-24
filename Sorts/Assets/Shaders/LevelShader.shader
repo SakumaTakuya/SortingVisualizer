@@ -20,18 +20,15 @@
             
             #pragma multi_compile_fwdbase nolightmap nodirlightmap nodynlightmap novertexlight
             #pragma target 4.5
-
-            struct Boid 
-            {
-                float3 velocity;
-                float3 position;
-            };
             
             struct Level
             {
-                float3 position;
+                int index;
+                int step;
                 int number; 
             };
+            
+            int _MidStep;
             
             sampler2D _MainTex;
             float _Length;
@@ -70,16 +67,18 @@
             {
             #if SHADER_TARGET >= 45
                 Level b = _LevelBuffer[instanceID];
-                float3 pos = b.position;
+                int id = b.index;
+                int sp = b.step;
                 int num = b.number;
             #else
-                float3 pos = 0;
+                int id = 0;
+                int sp = 0;
                 int num = 0;
             #endif
                 
                 float4x4 object2world = transform(
-                    float3(1, num + 0.1f, 1) / _Length * 2,
-                    pos / _Length * 2
+                    float3(1, num + 0.1, 1) / _Length * 2,
+                    float3(id, num/2.0, sp - _MidStep) / _Length * 2
                 );
                 
                 v2f o;

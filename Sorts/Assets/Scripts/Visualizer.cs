@@ -15,13 +15,32 @@ public class Visualizer : MonoBehaviour
 	private ComputeBuffer _argsBuffer;
 	private readonly uint[] _args = {0, 0, 0, 0, 0};
 
-	private readonly List<SortElement> _elements = new List<SortElement>();
+	private readonly List<List<SortElement>> _elements = new List<List<SortElement>>();
 	private ComputeBuffer _elementBuffer;
-	
-	private static Vector3 _sumVec = Vector3.zero;
+
 	private bool _doRender;
 	private int _renderCount;
-	
+
+	[SerializeField] private int _begin=0;
+	[SerializeField]private int _end=1;
+
+	public int Begin //表示する最初のステップ、0以上End以下
+	{
+		get { return _begin; }
+		set { _begin = value < 0 ? 0 : value < _end ? value : _end - 1; }
+	} 
+
+	public int End //最後のステップ、要素の配列以上にもならないし、Begin以下にもならない
+	{
+		get { return _end; }
+		set { _end = _elements != null ? value <= _elements.Count ? value > _begin ? value : _begin + 1 : _elements.Count : _end; }
+	}
+
+	public int Middle
+	{
+		get { return (_begin + _end) / 2; }
+	}
+
 	private void Start () 
 	{
 		if(!SystemInfo.supportsInstancing) gameObject.SetActive(false);
@@ -41,7 +60,39 @@ public class Visualizer : MonoBehaviour
 	
 	private void RenderInstancedMesh()
 	{
+		var displayStepNum = End - Begin + 1;
+
+		if (displayStepNum > _elements.Count)
+		{
+			displayStepNum = _elements.Count;
+			Begin = 0;
+			End = _elements.Count;
+		}
+		
+		var length = _elements[0].Count;
+		_renderCount = displayStepNum * length;
+		
+		var renderArray = new SortElement[_renderCount];
+		for (var i = Begin; i < End; i++)
+		{
+			for (var j = 0; j < length; j++)
+			{
+				renderArray[(i - Begin) * length + j] = _elements[i][j];
+			}
+		}
+		
+		DestroyElementBuffer();
+		_elementBuffer = new ComputeBuffer(
+			_renderCount, 
+			Marshal.SizeOf(typeof(SortElement))
+		);
+		_elementBuffer.SetData(renderArray);
+		
 		_instanceMaterial.SetBuffer("_LevelBuffer", _elementBuffer);
+		_instanceMaterial.SetInt("_MidStep", displayStepNum / 2 + Begin);
+		
+		//ここまでの処理がネックな場合は関数分けして、表示区域が移動した時のみ実行するように仕様を変更する
+		
 		var numIndices = _instanceMesh ? _instanceMesh.GetIndexCount(0) : 0;
 		_args[0] = numIndices;
 		_args[1] = (uint) _renderCount;
@@ -56,63 +107,39 @@ public class Visualizer : MonoBehaviour
 		);
 	}
 
-	public void SetElement(int number, int index, int step)
+	public void SetElement(int index, int step, int number)
 	{
-		var pos = new Vector3(index, number / 2f, step);
-		_elements.Add(new SortElement(
-			pos, 
+		if (_elements.Count <= step) _elements.Add(new List<SortElement>());	
+
+		_elements[step].Add(new SortElement(
+			index,
+			step,
 			number
 		));
-		_sumVec += pos;
 	}
 
 	public void ShowStep(int length)
 	{
 		if(_elements.Count == 0) return;
-		_renderCount = _elements.Count;
 		_doRender = true;
-		
-		DestroyElementBuffer();
-		_elementBuffer = new ComputeBuffer(
-			_renderCount, 
-			Marshal.SizeOf(typeof(SortElement))
-		);
-		_elementBuffer.SetData(_elements.ToArray());
+
 		_instanceMaterial.SetFloat("_Length", length);
 		
-		_cameraRig.transform.position = _sumVec / _renderCount / length * 2;
 		_arrow.SetActive(true);
-		_arrow.transform.position = new Vector3(2.5f,0,transform.position.z);
-		
-		_elements.Clear();
-		_sumVec = Vector3.zero;
-	}
-	
-	public void ShowStep(int begin, int end, int length)
-	{
-		if(_elements.Count == 0) return;
-		_renderCount = end - begin + 1;
-		_doRender = true;
-		
-		DestroyElementBuffer();
-		_elementBuffer = new ComputeBuffer(
-			_renderCount, 
-			Marshal.SizeOf(typeof(SortElement))
-		);
-		
-		var arr = new SortElement[_renderCount];
-		Array.Copy(_elements.ToArray(), begin, arr, 0, _renderCount);
-		_elementBuffer.SetData(arr);
-		_instanceMaterial.SetFloat("_Length", length);
-		
-		_cameraRig.transform.position = _sumVec / _renderCount / length * 2;
-		_arrow.SetActive(true);
-		_arrow.transform.position = new Vector3(2.5f,0,transform.position.z);
-		
-		_elements.Clear();
-		_sumVec = Vector3.zero;
+		Begin = 0;
+		End = Mathf.Min(_elements.Count, 255);
 	}
 
+	public void HideStep()
+	{
+		_doRender = false;
+		Begin = 0;
+		End = 0;
+		_elements.Clear();
+		_arrow.SetActive(false);
+
+	}
+	
 	private void DestroyElementBuffer()
 	{
 		if (_elementBuffer == null) return;

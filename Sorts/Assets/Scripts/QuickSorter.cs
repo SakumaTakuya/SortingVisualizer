@@ -13,6 +13,7 @@ public class QuickSorter : ISorter
     public void SortWithEvent(List<IComparable> array, int left, int right, Action<List<IComparable>, int, int> action)
     {
         QuickSortWirhEvent(array,left,right,action);
+        action(array, -1, -1);
     }
 
     private void QuickSortWirhEvent(List<IComparable> array, int left, int right,
@@ -40,8 +41,8 @@ public class QuickSorter : ISorter
             }
 
             if (i > j) continue;
-            Swap(array, i++, j--);
             action(array, i, j);
+            Swap(array, i++, j--);  
         } while (i <= j);
         QuickSortWirhEvent(array, left, j, action);
         QuickSortWirhEvent(array, i, right, action);

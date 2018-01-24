@@ -20,7 +20,7 @@ public class SortManager : MonoBehaviour
 	public int Length
 	{
 		get { return _length; }
-		set { _length = value; }
+		set{ _length = value; }
 	}
 	
 	public void SetAscendingArray()
@@ -54,16 +54,16 @@ public class SortManager : MonoBehaviour
 	}
 
 	public void Execute()
-	{
+	{		
 		var step = 0;
 		Sorter.SortWithEvent(_targets, 0, _length - 1, (arr, l, r) =>
-			{
-				step++;
+			{	
 				var index = 0;
 				foreach (var c in arr)
 				{
-					_visualizer.SetElement((int)c,index++,step);
+					_visualizer.SetElement(index++,step,(int)c);
 				}
+				step++;
 			}
 		);
 		
